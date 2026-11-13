@@ -1,0 +1,734 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Ivy</title>
+<link rel="stylesheet" href="/vendor/katex.min.css">
+<style>
+
+:root{--ground:#000;--surface-1:rgba(28,28,30,.72);--surface-2:#1c1c1e;--surface-3:#2c2c2e;--surface-sunken:#232325;--line:#2f2f32;--line-strong:#5a5a5f;--ink:#f5f5f7;--ink-muted:#a1a1a6;--ink-subtle:#8e8e93;--brass:#0a84ff;--brass-strong:#409cff;--brass-soft:#0a2a4d;--on-brass:#ffffff;--oxford:#93b4e6;--oxford-soft:#18222f;--ivy:#30d158;--ivy-soft:#13281a;--claret:#ff6961;--claret-soft:#2e1716;--ember:#f2a65f;--ember-soft:#2b1e12;--term-ink:#e5e5ea;--term-prompt:#409cff;--syn-keyword:#ff7ab2;--syn-string:#ff8170;--syn-func:#6bdfff;--syn-number:#d9c97c;--syn-comment:#8e8e93;--focus-ring:#409cff;--font-display:var(--font-ui);--font-read:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;--font-ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;--font-mono:"SF Mono",ui-monospace,Consolas,monospace;}
+[data-theme="light"]{--ground:#f5f5f7;--surface-1:rgba(236,236,240,.72);--surface-2:#f5f5f7;--surface-3:#e3e3e8;--surface-sunken:#ffffff;--line:#dcdce1;--line-strong:#a1a1a6;--ink:#1d1d1f;--ink-muted:#515154;--ink-subtle:#6e6e73;--brass:#007aff;--brass-strong:#0066d6;--brass-soft:#d6e8ff;--on-brass:#ffffff;--oxford:#22457a;--oxford-soft:#dde5f0;--ivy:#1f7a37;--ivy-soft:#e3f4e7;--claret:#c4281c;--claret-soft:#fbe7e5;--ember:#934307;--ember-soft:#f6e2cc;--term-ink:#1d1d1f;--term-prompt:#0066d6;--syn-keyword:#ad3da4;--syn-string:#c41a16;--syn-func:#0b4f79;--syn-number:#1c00cf;--syn-comment:#6e6e73;--focus-ring:#007aff;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface-2);color:var(--ink);font:14px/20px var(--font-ui);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.iv{display:grid;grid-template-columns:260px 1fr;height:100vh}
+.iv-side{background:var(--surface-1);border-right:1px solid var(--line);backdrop-filter:blur(20px);padding:16px 12px;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.iv-logo{font-weight:600;font-size:15px;padding:0 8px 12px;letter-spacing:-.01em}
+.iv-logo i{font-style:normal;color:var(--ivy)}
+.iv-ws-bar{display:flex;align-items:center;justify-content:space-between;padding:0 8px 12px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.iv-ws-info{display:flex;flex-direction:column;min-width:0}
+.iv-ws-label{font-size:10px;text-transform:uppercase;color:var(--ink-subtle);font-weight:600;letter-spacing:.05em}
+.iv-ws-name{font-weight:600;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
+.iv-tree-box{flex:1;overflow-y:auto;padding-right:2px}
+.iv-tree-dir{font-size:12px;font-weight:600;color:var(--ink-subtle);padding:10px 8px 4px;display:flex;align-items:center;gap:6px}
+.iv-tree-dir.d1{padding-left:18px}
+.iv-tree-dir.d2{padding-left:28px}
+.iv-side{scrollbar-width:thin}.iv-body,.iv-tree-box{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+::selection{background:var(--brass-soft)}
+@media(max-width:800px){.iv{grid-template-columns:1fr}.iv-side{display:none}.iv-body{padding:20px 16px 48px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.iv-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-radius:8px;color:var(--ink-muted);cursor:pointer;transition:background .12s}
+.iv-item:hover{background:var(--surface-3);color:var(--ink)}
+.iv-item.on{background:var(--surface-sunken);box-shadow:inset 2px 0 0 var(--brass),0 1px 3px rgba(0,0,0,.08);color:var(--ink);font-weight:500}
+.iv-item.d1{padding-left:18px}
+.iv-item.d2{padding-left:28px}
+.iv-item-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.iv-badge{font-size:10px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:4px;letter-spacing:.04em;flex-shrink:0}
+.iv-badge.l{background:var(--oxford-soft);color:var(--oxford);border:1px solid rgba(147,180,230,.35)}
+.iv-badge.q{background:var(--ember-soft);color:var(--ember);border:1px solid rgba(242,166,95,.35)}
+.iv-badge.c{background:var(--ivy-soft);color:var(--ivy);border:1px solid rgba(48,209,88,.35)}
+.iv-main{display:flex;flex-direction:column;min-width:0;overflow:hidden;position:relative}
+.iv-bar{display:flex;align-items:center;gap:4px;height:48px;padding:0 20px;flex:none}
+.iv-bar button{width:28px;height:28px;border-radius:6px;color:var(--ink-muted);font-size:16px}
+.iv-bar button:hover{background:var(--surface-3)}
+.iv-bar .hist{width:auto;padding:0 8px;font-size:12px;color:var(--ink-subtle)}
+.iv-bar .theme{margin-left:auto}
+.iv-body{flex:1;overflow:auto;padding:24px 48px 64px}
+.iv-col{max-width:720px;margin:0 auto}
+.iv-meta{font-size:12px;color:var(--ink-subtle);margin-bottom:12px}
+h1{font:600 34px/40px var(--font-ui);letter-spacing:-.025em;margin:0 0 24px}
+h2{font:600 21px/28px var(--font-ui);letter-spacing:-.015em;margin:40px 0 12px}
+.iv-doc p{font:400 17px/29px var(--font-read);margin:0 0 18px}
+code{font:13px var(--font-mono);background:var(--surface-3);padding:2px 5px;border-radius:4px}
+pre{overflow-x:auto;font:13.5px/22px var(--font-mono);background:var(--surface-sunken);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:0 0 20px;color:var(--term-ink)}
+.iv-doc blockquote{border-left:3px solid var(--ivy);margin:0 0 20px;padding:2px 0 2px 16px;color:var(--ink-muted)}
+.iv-doc blockquote p{font-size:16px;margin:0}
+.iv-doc table{border-collapse:collapse;margin:0 0 20px;width:100%}
+.iv-doc td,.iv-doc th{border-bottom:1px solid var(--line);padding:6px 12px;text-align:left}
+.iv-empty{color:var(--ink-subtle);text-align:center;padding-top:20vh;font-size:15px}
+.iv-err{color:var(--claret);font:13px/20px var(--font-mono);white-space:pre-wrap;border:1px solid var(--claret);border-radius:12px;padding:16px}
+
+/* Tabs & Generic controls */
+.iv-tabs{display:flex;gap:8px;margin-bottom:20px;align-items:center}
+.iv-tab{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--ink-muted);background:var(--surface-sunken);border:1px solid var(--line);transition:all .12s}
+.iv-tab:hover{color:var(--ink);background:var(--surface-3)}
+.iv-tab.on{color:var(--ink);background:var(--surface-3);border-color:var(--line-strong)}
+.iv-btn{background:var(--brass);color:var(--on-brass);height:36px;padding:0 18px;border-radius:8px;font-weight:500;font-size:13px;transition:opacity .15s}
+.iv-btn:hover{opacity:.9}
+.iv-btn-mini{background:var(--surface-3);color:var(--ink-muted);font-size:12px;font-weight:500;padding:4px 10px;border-radius:6px;border:1px solid var(--line);cursor:pointer;transition:all .12s}
+.iv-btn-mini:hover{color:var(--ink);background:var(--surface-2);border-color:var(--line-strong)}
+
+/* Card Bubbles */
+.iv-card-container{background:var(--surface-sunken);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.iv-bubble{position:relative;display:block;width:100%;text-align:left;padding:12px 16px;border-radius:10px;margin-bottom:8px;border:1px solid var(--line);background:var(--surface-2);transition:border-color .15s, background .15s, transform .1s;cursor:pointer}
+.iv-bubble:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+.iv-bubble:last-child{margin-bottom:0}
+.iv-bubble-q{border-left:4px solid var(--oxford);background:var(--oxford-soft)}
+.iv-bubble-a{border-left:4px solid var(--ivy);background:var(--ivy-soft)}
+.iv-bubble-p{border-left:4px solid var(--brass);background:var(--brass-soft)}
+.iv-bubble-c{border-left:4px solid var(--ember);background:var(--ground)}
+.iv-bubble-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.iv-bubble-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.iv-bubble-q .iv-bubble-label{color:var(--oxford)}
+.iv-bubble-a .iv-bubble-label{color:var(--ivy)}
+.iv-bubble-p .iv-bubble-label{color:var(--brass)}
+.iv-bubble-c .iv-bubble-label{color:var(--ember)}
+.iv-bubble-val{font:15px/23px var(--font-ui);color:var(--ink);white-space:pre-wrap}
+.iv-bubble-val.q{font:600 17px/25px var(--font-ui)}
+.iv-bubble-val.m{font:13px/21px var(--font-mono);white-space:pre-wrap;color:var(--term-ink)}
+.iv-bubble-copy{font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;background:var(--surface-3);color:var(--ink-muted);border:1px solid var(--line);transition:all .15s}
+.iv-bubble:hover .iv-bubble-copy{color:var(--ink);border-color:var(--line-strong)}
+.iv-bubble.cp{background:var(--ivy-soft);border-color:var(--ivy)}
+.iv-bubble.cp .iv-bubble-copy{background:var(--ivy);color:var(--surface-sunken)}
+.iv-step-prompt{text-align:center;padding:24px 16px;color:var(--ink-subtle);font-size:14px;background:var(--surface-2);border-radius:12px;margin:12px 0;cursor:pointer;border:1px dashed var(--line);transition:all .15s}
+.iv-step-prompt:hover{background:var(--surface-3);color:var(--ink);border-color:var(--line-strong)}
+.iv-step-nav{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:12px}
+
+/* Quiz styling, animations and hint */
+.iv-prog{height:3px;background:var(--line);border-radius:2px;margin-bottom:32px}
+.iv-prog i{display:block;height:100%;background:var(--ivy);border-radius:2px;transition:width .2s}
+.iv-q{font:600 24px/32px var(--font-ui);letter-spacing:-.02em;margin:0 0 20px}
+.iv-opt{display:flex;gap:14px;width:100%;text-align:left;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--surface-sunken);margin-bottom:10px;font-size:15px;transition:border-color .15s, background .15s, box-shadow .15s, transform .12s}
+.iv-opt:hover{border-color:var(--line-strong);background:var(--surface-2)}
+.iv-opt.sel{border:2px solid var(--ink);background:var(--surface-3);box-shadow:0 0 0 3px rgba(255,255,255,0.12);transform:scale(1.008)}
+.iv-opt.pulse{animation:ivOptPulse .18s ease-out}
+@keyframes ivOptPulse{0%{transform:scale(1)}50%{transform:scale(0.97)}100%{transform:scale(1.008)}}
+.iv-opt.ok{border-color:var(--ivy);background:var(--ivy-soft)}.iv-opt.ok span{color:var(--ivy)}
+.iv-opt.no{border-color:var(--claret);background:var(--claret-soft)}.iv-opt.no span{color:var(--claret)}
+.iv-opt.dim{opacity:.4}
+.iv-input{width:100%;height:46px;border:1px solid var(--line);border-radius:12px;background:var(--surface-sunken);color:var(--ink);padding:0 16px;font:15px var(--font-mono);margin-bottom:12px}
+.iv-hint-box{background:var(--brass-soft);border:1px solid rgba(216,177,106,.4);color:var(--ink);padding:12px 16px;border-radius:10px;font:14px/22px var(--font-read);margin:16px 0;display:flex;justify-content:space-between;align-items:center;animation:ivFadeIn .2s}
+@keyframes ivFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.iv-hint-timer{font-size:11px;color:var(--brass);font-weight:700}
+.iv-breakdown{background:var(--surface-sunken);border:1px solid var(--line);border-radius:14px;padding:16px;margin:24px 0;text-align:left}
+.iv-breakdown-item{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.iv-breakdown-item:last-child{border-bottom:0}
+.iv-breakdown-item b{color:var(--ink)}
+.iv-breakdown-item .ans-err{color:var(--claret)}
+.iv-breakdown-item .ans-ok{color:var(--ivy)}
+
+/* Mermaid & Fullscreen Modal */
+.iv-mm-wrap{background:var(--surface-sunken);border:1px solid var(--line);border-radius:14px;padding:12px 16px 16px;margin:0 0 24px}
+.iv-mm-bar{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:14px;font-size:12px;color:var(--ink-subtle)}
+.iv-modal{position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);z-index:999;display:none;flex-direction:column}
+.iv-modal.on{display:flex}
+.iv-modal-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--line-strong);background:var(--surface-1);color:var(--ink)}
+.iv-modal-viewport{flex:1;overflow:hidden;position:relative;cursor:grab;display:flex;align-items:center;justify-content:center}
+.iv-modal-canvas{transform-origin:center center;user-select:none;transition:transform .05s ease-out;display:flex;align-items:center;justify-content:center}
+.iv-modal-canvas svg{max-width:none!important;max-height:none!important}
+.iv-modal-foot{padding:8px 24px;font-size:12px;color:var(--ink-subtle);background:var(--surface-1);border-top:1px solid var(--line);display:flex;justify-content:space-between}
+
+/* Drag and Drop Overlay */
+.iv-drop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:9999;display:none;align-items:center;justify-content:center}
+.iv-drop-overlay.on{display:flex}
+.iv-drop-box{background:var(--surface-sunken);border:2px dashed var(--ivy);border-radius:24px;padding:48px 56px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.35);pointer-events:none}
+
+/* ===== Ivy design system (single source of overrides) ===== */
+:root{--r-sm:4px;--r-md:6px;--r-lg:10px;--sp:8px}
+body{font-size:13px;letter-spacing:-.008em}
+/* Sidebar */
+.iv-side{backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);border-right:1px solid var(--line)}
+.iv-logo{font-weight:700;letter-spacing:-.02em}.iv-logo i{color:var(--brass)}
+.iv-item{border-radius:var(--r-md);padding:5px 10px}
+.iv-item.on{background:var(--surface-3);color:var(--ink);box-shadow:none;font-weight:600}
+.iv-badge{border:0!important;border-radius:var(--r-sm);font-size:9.5px;padding:1px 5px}
+.iv-item.on .iv-badge{filter:brightness(1.2)}
+.iv-tree-dir{font-size:11px}
+.iv-bar{border-bottom:1px solid var(--line)}
+.iv-bar button{border-radius:var(--r-md)}
+/* Reading */
+h1{font:700 36px/42px var(--font-ui);letter-spacing:-.03em;margin:0 0 28px}
+h2{font:600 22px/30px var(--font-ui);letter-spacing:-.02em;margin:44px 0 12px}
+.iv-doc p,.iv-doc ul,.iv-doc ol{font:400 17px/28px var(--font-read);letter-spacing:-.01em}
+.iv-doc ul,.iv-doc ol{padding-left:22px;margin:0 0 18px}
+pre{border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:none;background:var(--surface-sunken)}
+code{border-radius:var(--r-sm)}
+.iv-doc blockquote{border-left:3px solid var(--brass);background:var(--surface-sunken);border-radius:0 var(--r-md) var(--r-md) 0;padding:12px 16px}
+.iv-doc table{border:1px solid var(--line);border-radius:var(--r-lg);border-collapse:separate;border-spacing:0;overflow:hidden}
+.iv-doc th{background:var(--surface-3);font-size:12px;font-weight:600;color:var(--ink-muted)}
+.iv-doc tr:last-child td{border-bottom:0}
+/* Controls */
+.iv-btn{border-radius:var(--r-md);height:34px;padding:0 18px;background:var(--brass);color:var(--on-brass);font-weight:600}
+.iv-btn:hover{opacity:.88}
+.iv-btn-mini{border-radius:var(--r-md);background:var(--surface-3)}
+.iv-tabs{gap:2px;padding:2px;background:var(--surface-3);border-radius:var(--r-md);display:inline-flex}
+.iv-tab{border:0;background:none;border-radius:var(--r-sm);padding:5px 14px}
+.iv-tab.on{background:var(--surface-sunken);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.iv-input{border-radius:var(--r-md);border:1px solid var(--line-strong)}
+.iv-input:focus{outline:0;border-color:var(--brass);box-shadow:0 0 0 3px var(--brass-soft)}
+/* Cards */
+.iv-card-container{background:var(--surface-sunken);border:1px solid var(--line);border-radius:var(--r-lg);padding:0 20px 4px;margin-bottom:28px;overflow:hidden;box-shadow:none}
+.iv-card-head{margin:0 -20px;padding:10px 20px;background:var(--surface-3);border-bottom:1px solid var(--line);font:600 11px/16px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted)}
+.iv-bubble{background:none!important;border:0;border-top:1px solid var(--line);border-left:0!important;border-radius:0;margin:0;padding:16px 0;transform:none!important}
+.iv-card-head+.iv-bubble{border-top:0}
+.iv-bubble-label{font-size:11px;font-weight:600;letter-spacing:.06em}
+.iv-bubble-val{font-size:16px;line-height:26px}
+.iv-bubble-val.q{font-size:19px;line-height:27px;font-weight:600;letter-spacing:-.015em}
+.iv-bubble-val.m{background:var(--surface-2);border-radius:var(--r-md);padding:12px 14px;margin-top:4px}
+.iv-bubble-copy{background:none;border:0;color:var(--ink-subtle);opacity:0;transition:opacity .12s}
+.iv-bubble:hover .iv-bubble-copy,.iv-bubble.cp .iv-bubble-copy{opacity:1}
+.iv-bubble.cp .iv-bubble-copy{background:none;color:var(--ivy)}
+.iv-step-prompt{border-radius:var(--r-lg)}
+/* Quiz */
+.iv-prog{height:3px;border-radius:2px;margin-bottom:36px}.iv-prog i{background:var(--brass);border-radius:2px}
+.iv-q{font-size:26px;line-height:34px;letter-spacing:-.025em}
+.iv-opt{align-items:center;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface-sunken);margin-bottom:8px;padding:13px 16px;transform:none!important;box-shadow:none;transition:border-color .12s,background .12s}
+.iv-opt:hover{border-color:var(--line-strong);background:var(--surface-3)}
+.iv-opt.pulse{animation:none}
+.iv-opt>span{flex:none;width:20px;height:20px;display:grid;place-items:center;font-size:11px;font-weight:600;color:var(--ink-subtle);border:1.5px solid var(--line-strong);border-radius:50%}
+.iv-opt.m>span{border-radius:var(--r-sm)}
+.iv-opt.sel{border:1px solid var(--brass);background:var(--brass-soft);box-shadow:none}
+.iv-opt.sel>span{background:var(--brass);border-color:var(--brass);color:var(--on-brass)}
+.iv-opt.ok{border-color:var(--ivy);background:var(--ivy-soft)}.iv-opt.ok>span{border-color:var(--ivy);background:var(--ivy);color:#000}
+.iv-opt.no{border-color:var(--claret);background:var(--claret-soft)}.iv-opt.no>span{border-color:var(--claret);background:var(--claret);color:#fff}
+.iv-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:20px;color:var(--ink-subtle);font-size:12px}
+.iv-hint-box{background:var(--surface-sunken);border:1px solid var(--line);border-left:3px solid var(--ember);border-radius:var(--r-md);font-family:var(--font-ui)}
+.iv-hint-timer{color:var(--ember);font-variant-numeric:tabular-nums}
+.iv-breakdown{border-radius:var(--r-lg)}
+/* Misc */
+.iv-mm-wrap{border-radius:var(--r-lg);padding:0 16px 16px;overflow:hidden}
+.iv-mm-bar{margin:0 -16px 14px;padding:8px 16px;background:var(--surface-3)}
+.iv-drop-box{border:1.5px dashed var(--brass);border-radius:var(--r-lg);box-shadow:none}
+</style></head><body>
+<div class="iv"><aside class="iv-side">
+  <div class="iv-logo"><i>●</i> Ivy</div>
+  <div class="iv-ws-bar">
+    <div class="iv-ws-info">
+      <span class="iv-ws-label">Папка</span>
+      <span class="iv-ws-name" id="wsName" title="Текущая папка">study</span>
+    </div>
+    <button class="iv-btn-mini" id="wsBtn" title="Сменить рабочую папку">Папка ⚙</button>
+  </div>
+  <div class="iv-tree-box" id="tree"></div>
+</aside>
+<main class="iv-main">
+  <div class="iv-bar">
+    <button id="back" title="Назад ⌘[">‹</button>
+    <button id="fwd" title="Вперёд ⌘]">›</button>
+    <button class="hist" id="hist">0 / 0</button>
+    <button class="theme" id="theme" title="Тема ⌘⇧L">◐</button>
+  </div>
+  <div class="iv-body" id="body"><div class="iv-empty">Выбери тему слева, перетащи файл на экран или попроси агента открыть её.</div></div>
+</main></div>
+
+<div id="mmModal" class="iv-modal">
+  <div class="iv-modal-bar">
+    <span style="font-weight:600">Диаграмма Mermaid</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="iv-btn-mini" id="mmZoomIn">Zoom +</button>
+      <button class="iv-btn-mini" id="mmZoomOut">Zoom −</button>
+      <button class="iv-btn-mini" id="mmReset">100%</button>
+      <button class="iv-btn-mini" id="mmCopyModal">Скопировать код</button>
+      <button class="iv-btn-mini" id="mmClose" style="color:var(--claret)">✕ Закрыть (Esc)</button>
+    </div>
+  </div>
+  <div class="iv-modal-viewport" id="mmViewport">
+    <div class="iv-modal-canvas" id="mmCanvas"></div>
+  </div>
+  <div class="iv-modal-foot">
+    <span>Колесико мыши: масштаб · Зажать левую кнопку мыши: перемещение графика</span>
+    <span>Клавиша Esc: закрыть</span>
+  </div>
+</div>
+
+<div id="dropOverlay" class="iv-drop-overlay">
+  <div class="iv-drop-box">
+    <div style="font-size:42px;margin-bottom:12px">📥</div>
+    <div style="font-weight:600;font-size:20px;letter-spacing:-.01em">Перетащи файл сюда</div>
+    <div style="color:var(--ink-muted);font-size:14px;margin-top:8px">.md откроется как лекция · .json как квиз или карточки</div>
+  </div>
+</div>
+
+<script src="/vendor/marked.min.js"></script>
+<script src="/vendor/katex.min.js"></script>
+<script src="/vendor/highlight.min.js"></script>
+<script src="/vendor/mermaid.min.js"></script>
+<script>
+const $=s=>document.querySelector(s), esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let S={}, quiz=null, cardsData=null, cardView='list', stepIdx=0, stepUnfolded=false, hotkeys=null;
+let currentWsRoot='';
+let mmScale=1, mmPanX=0, mmPanY=0, mmDragging=false, mmStartX=0, mmStartY=0, currentMmRaw='';
+let hintTimeout=null, hintInterval=null, hintSeconds=5;
+
+const theme=localStorage.ivyTheme||'dark'; document.documentElement.dataset.theme=theme;
+$('#theme').onclick=()=>{const t=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=t;try{localStorage.ivyTheme=t}catch{};S.mode==='lecture'&&render(true)};
+// Не полагаемся только на SSE: если поток отвалился, состояние всё равно подтянется после команды.
+const cmd=async(c,p)=>{await fetch('/api/cmd',{method:'POST',body:JSON.stringify({cmd:c,path:p})});try{applyState(await (await fetch('/api/state')).json())}catch{}};
+$('#back').onclick=()=>cmd('back'); $('#fwd').onclick=()=>cmd('forward');
+$('#hist').onclick=e=>{e.stopPropagation();let l=$('.iv-histlist');if(l)return l.remove();l=document.createElement('div');l.className='iv-histlist';
+ S.history.forEach((h,i)=>{const d=document.createElement('div');d.textContent=`${i+1}. ${h.mode} · ${h.path}`;if(i===S.pos)d.className='on';d.onclick=()=>cmd(i<S.pos?'back':'forward');l.prepend(d)});$('.iv-main').append(l)};
+document.onclick=()=>$('.iv-histlist')?.remove();
+
+// Workspace & Tree
+function updateWsUI(root, name){
+ if(root) currentWsRoot = root;
+ if(name){
+  const el = $('#wsName');
+  if(el){ el.textContent = name; el.title = root || ''; }
+ }
+ loadTree();
+}
+
+async function loadWorkspace(){
+ try{
+  const r=await (await fetch('/api/workspace')).json();
+  if(r.ok) updateWsUI(r.root, r.name);
+ }catch{}
+}
+$('#wsBtn').onclick=async()=>{
+ const p=prompt('Укажи абсолютный путь к рабочей папке (study / obsidian):', currentWsRoot);
+ if(!p||p.trim()===currentWsRoot)return;
+ try{
+  const res=await (await fetch('/api/workspace',{method:'POST',body:JSON.stringify({path:p.trim()})})).json();
+  if(!res.ok)alert('Ошибка: '+res.error);
+  else updateWsUI(res.root, res.name);
+ }catch(e){alert('Ошибка смены папки: '+e.message);}
+};
+
+async function loadTree(){
+ const t=await (await fetch('/api/tree')).json();const out=[];
+ const walk=(n,d)=>n.forEach(x=>{
+  if(x.type==='dir'||x.children){
+   out.push(`<div class="iv-tree-dir d${Math.min(d,2)}">📁 ${esc(x.name)}</div>`);
+   walk(x.children||[],d+1);
+  } else {
+   const kind=x.kind||'lecture';
+   const bCls=kind==='quiz'?'q':kind==='cards'?'c':'l';
+   const bTxt=kind==='quiz'?'quiz':kind==='cards'?'cards':'md';
+   const clean=x.name.replace(/\.(md|json)$/i,'');
+   out.push(`<div class="iv-item d${Math.min(d,2)}" data-p="${x.path}">
+    <span class="iv-item-name">${esc(clean)}</span>
+    <span class="iv-badge ${bCls}">${bTxt}</span>
+   </div>`);
+  }
+ });
+ walk(t,0);$('#tree').innerHTML=out.join('');
+ document.querySelectorAll('.iv-item').forEach(e=>e.onclick=()=>cmd('open',e.dataset.p));
+ mark();
+}
+const mark=()=>document.querySelectorAll('.iv-item').forEach(e=>e.classList.toggle('on',e.dataset.p===S.path));
+
+async function render(keep){
+ const body=$('#body'),y=keep?body.scrollTop:0;hotkeys=null;
+ $('#hist').textContent=`${S.pos+1} / ${S.history?.length||0}`;mark();
+ const targetPath=S.path;
+ if(!targetPath){
+  body.innerHTML=`<div class="iv-col"><div class="iv-empty" style="padding:60px 0;text-align:center;color:var(--ink-subtle)">
+   <div style="font-size:28px;margin-bottom:12px">🌿 Ivy</div>
+   <p>Выбери материал в дереве слева или перетащи сюда файл (.md, .json).</p>
+  </div></div>`;
+  return;
+ }
+ let res,txt;
+ try{
+  res=await fetch('/api/file?p='+encodeURIComponent(targetPath));
+  if(!res.ok)throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  txt=await res.text();
+ }catch(e){
+  if(S.path!==targetPath)return;
+  return body.innerHTML=`<div class="iv-col"><div class="iv-err">Не удалось загрузить ${esc(targetPath)}\n${esc(e.message)}</div></div>`;
+ }
+ if(S.path!==targetPath)return;
+ try{
+  if(targetPath.endsWith('.md')) lecture(txt);
+  else {
+   const j=JSON.parse(txt);
+   const isQuiz = S.mode === 'quiz' || (S.mode !== 'cards' && (j.questions || /quiz/i.test(targetPath)));
+   isQuiz ? startQuiz(j, keep) : showCards(j, keep);
+  }
+ } catch(e){body.innerHTML=`<div class="iv-col"><h1>Ошибка файла</h1><div class="iv-err">${esc(targetPath)}\n${esc(e.message)}\n\nИсправь файл — вид обновится сам.</div></div>`}
+ body.scrollTop=y;
+}
+
+// Drag & Drop files
+window.addEventListener('dragover',e=>{e.preventDefault();$('#dropOverlay').classList.add('on');});
+window.addEventListener('dragleave',e=>{if(!e.relatedTarget)$('#dropOverlay').classList.remove('on');});
+window.addEventListener('drop',async e=>{
+ e.preventDefault();$('#dropOverlay').classList.remove('on');
+ const f=e.dataTransfer.files[0];if(!f)return;
+ const txt=await f.text(),name=f.name;
+ if(name.endsWith('.md')){
+  S={mode:'lecture',path:name,history:S.history||[],pos:S.pos||0};
+  lecture(txt);
+ } else if(name.endsWith('.json')){
+  try{
+   const j=JSON.parse(txt);
+   const isQuiz=j.questions||/quiz/i.test(name);
+   S={mode:isQuiz?'quiz':'cards',path:name,history:S.history||[],pos:S.pos||0};
+   isQuiz?startQuiz(j):showCards(j);
+  }catch(err){alert('Ошибка чтения JSON: '+err.message);}
+ }
+});
+
+// Mermaid Fullscreen Pan & Zoom
+function updateMmTransform(){const c=$('#mmCanvas');if(c)c.style.transform=`translate(${mmPanX}px, ${mmPanY}px) scale(${mmScale})`}
+function openMermaidModal(wrap, raw){
+ const svg=wrap.querySelector('svg');if(!svg)return;
+ currentMmRaw=raw;$('#mmCanvas').innerHTML=svg.outerHTML;
+ mmScale=1;mmPanX=0;mmPanY=0;updateMmTransform();$('#mmModal').classList.add('on');
+}
+function closeMermaidModal(){$('#mmModal').classList.remove('on')}
+$('#mmClose').onclick=closeMermaidModal;
+$('#mmZoomIn').onclick=()=>{mmScale=Math.min(mmScale*1.25,8);updateMmTransform()};
+$('#mmZoomOut').onclick=()=>{mmScale=Math.max(mmScale*0.8,0.2);updateMmTransform()};
+$('#mmReset').onclick=()=>{mmScale=1;mmPanX=0;mmPanY=0;updateMmTransform()};
+$('#mmCopyModal').onclick=async()=>{
+ if(currentMmRaw){await navigator.clipboard.writeText(currentMmRaw);$('#mmCopyModal').textContent='Скопировано ✓';setTimeout(()=>$('#mmCopyModal').textContent='Скопировать код',1500)}
+};
+const vp=$('#mmViewport');
+vp.onwheel=e=>{e.preventDefault();const f=e.deltaY<0?1.15:0.85;mmScale=Math.min(Math.max(mmScale*f,0.2),8);updateMmTransform()};
+vp.onmousedown=e=>{if(e.target.closest('button'))return;mmDragging=true;mmStartX=e.clientX-mmPanX;mmStartY=e.clientY-mmPanY;vp.style.cursor='grabbing'};
+window.onmousemove=e=>{if(!mmDragging)return;mmPanX=e.clientX-mmStartX;mmPanY=e.clientY-mmStartY;updateMmTransform()};
+window.onmouseup=()=>{mmDragging=false;if(vp)vp.style.cursor='grab'};
+
+function lecture(src){
+ const m=src.match(/^---\n([\s\S]*?)\n---\n/);let meta='';if(m){src=src.slice(m[0].length);meta=m[1].split('\n').map(l=>l.replace(':',' ')).join(' · ')}
+ const math=[];src=src.replace(/\$\$([\s\S]+?)\$\$/g,(_,t)=>`@@M${math.push([t,1])-1}@@`).replace(/\$([^$\n]+?)\$/g,(_,t)=>`@@M${math.push([t,0])-1}@@`);
+ src=src.replace(/^> \[!(\w+)\][-+]? ?(.*)$/gm,(_,k,t)=>`> **${t||k}**`);
+ let h=marked.parse(src).replace(/@@M(\d+)@@/g,(_,i)=>{const[t,d]=math[i];try{return katex.renderToString(t,{displayMode:!!d,throwOnError:false})}catch{return esc(t)}});
+ $('#body').innerHTML=`<div class="iv-col iv-doc">${meta?`<div class="iv-meta">${esc(meta)}</div>`:''}${h}</div>`;
+ document.querySelectorAll('.iv-doc pre code').forEach(c=>{
+  if(c.className.includes('mermaid')){
+   const raw=c.textContent;
+   const wrap=document.createElement('div');
+   wrap.className='iv-mm-wrap';
+   wrap.innerHTML=`<div class="iv-mm-bar">
+    <span>Диаграмма</span>
+    <div style="display:flex;gap:6px">
+     <button class="iv-btn-mini mm-copy">Скопировать код</button>
+     <button class="iv-btn-mini mm-exp">На весь экран ⛶</button>
+    </div>
+   </div><div class="mermaid"></div>`;
+   wrap.querySelector('.mermaid').textContent=raw;
+   wrap.querySelector('.mm-copy').onclick=async e=>{
+    await navigator.clipboard.writeText(raw);e.target.textContent='Скопировано ✓';
+    setTimeout(()=>e.target.textContent='Скопировать код',1500);
+   };
+   wrap.querySelector('.mm-exp').onclick=()=>openMermaidModal(wrap, raw);
+   c.parentElement.replaceWith(wrap);
+  } else hljs.highlightElement(c);
+ });
+ const dark=document.documentElement.dataset.theme==='dark';mermaid.initialize({startOnLoad:false,theme:'base',themeVariables:{darkMode:dark,primaryColor:dark?'#2c2c2e':'#ffffff',primaryBorderColor:dark?'#5a5a5f':'#a1a1a6',primaryTextColor:dark?'#f5f5f7':'#1d1d1f',lineColor:dark?'#8e8e93':'#6e6e73',fontFamily:'-apple-system,system-ui,sans-serif',fontSize:'14px',edgeLabelBackground:dark?'#1c1c1e':'#f5f5f7'}});
+ mermaid.run({querySelector:'.mermaid'}).catch(()=>{});
+}
+
+// Quiz implementation with 1-4 toggle, animations, enter submit, 5-second hint
+const getAnsArr = q => Array.isArray(q.answer) ? q.answer : (q.answer !== undefined && q.answer !== null ? [q.answer] : []);
+function clearHintTimer(){
+ if(hintTimeout){clearTimeout(hintTimeout);hintTimeout=null;}
+ if(hintInterval){clearInterval(hintInterval);hintInterval=null;}
+}
+function startQuiz(j,keep){
+ clearHintTimer();
+ if(!keep||!quiz||quiz.src!==S.path)quiz={src:S.path,j,i:0,ok:0,done:false,ans:null,sel:[],results:[],weak:[],t0:Date.now()};else quiz.j=j;
+ drawQuiz();
+}
+
+function drawQuiz(){
+ clearHintTimer();
+ const{j,i}=quiz,b=$('#body'),qs=j.questions||[];
+ if(i>=qs.length){
+  const pct=Math.round((quiz.ok/(qs.length||1))*100);
+  const r={quiz:j.title||S.path,path:S.path,score:`${quiz.ok}/${qs.length}`,percent:pct,weak:quiz.weak,results:quiz.results,sec:Math.round((Date.now()-quiz.t0)/1000)};
+  fetch('/api/result',{method:'POST',body:JSON.stringify(r)});
+  const errs=quiz.results.filter(x=>!x.correct);
+  let errHtml='';
+  if(errs.length>0){
+   errHtml=`<div class="iv-breakdown"><div style="font-weight:600;margin-bottom:10px">Вопросы, требующие внимания:</div>`+
+    errs.map(e=>`<div class="iv-breakdown-item"><div><b>Вопрос ${e.i}:</b> ${esc(e.q)}</div><div class="ans-err">Твой ответ: ${esc(e.user||'(нет ответа)')}</div><div class="ans-ok">Правильно: ${esc(e.expected)}</div>${e.why?`<div class="iv-why" style="margin-top:4px">${esc(e.why)}</div>`:''}</div>`).join('')+`</div>`;
+  }
+  b.innerHTML=`<div class="iv-col" style="text-align:center;padding-top:8vh">
+   <div style="display:inline-block;padding:4px 14px;background:var(--ivy-soft);color:var(--ivy);border-radius:20px;font-size:12px;font-weight:600;margin-bottom:14px">Результаты отправлены на сервер ✓</div>
+   <div class="iv-meta">${esc(j.title||'Квиз')}</div>
+   <h1 style="font-size:56px;line-height:56px;margin-bottom:12px">${r.score}</h1>
+   <p class="iv-why" style="font-size:16px">${pct>=70?'Отличный результат. Тема усвоена.':'Материал требует повторения. Изучи ошибки ниже.'}</p>
+   ${errHtml}
+   <div style="display:flex;gap:10px;justify-content:center;align-items:center;margin-top:24px">
+    <button class="iv-btn" id="again">Пройти заново</button>
+    <button class="iv-btn-mini" id="copyRep" style="height:34px">Скопировать сводку</button>
+   </div></div>`;
+  $('#copyRep').onclick=async()=>{
+   const txt=`Квиз: ${r.quiz}\nРезультат: ${r.score} (${r.percent}%)\n`+(errs.length?`Ошибки:\n`+errs.map(e=>`- Вопрос ${e.i}: ответ "${e.user}", верно "${e.expected}"`).join('\n'):'Все ответы верны!');
+   await navigator.clipboard.writeText(txt);$('#copyRep').textContent='Скопировано ✓';
+   setTimeout(()=>$('#copyRep').textContent='Скопировать сводку',2000);
+  };
+  $('#again').onclick=()=>{quiz=null;startQuiz(j)};return;
+ }
+
+ const q=qs[i],A=quiz.ans,shown=A!==null,multi=q.type==='multiple',ansList=getAnsArr(q);
+ let opts='';
+ if(q.type==='input'){
+  opts=`<input class="iv-input" id="inp" placeholder="Введи ответ…" ${shown?'disabled':''} value="${shown?esc(A):''}">`+(shown?`<p class="iv-why" style="margin-top:10px;color:var(${quiz.last?'--ivy':'--claret'})">${quiz.last?'Верно':'Правильный ответ: '+esc(ansList.join(' / '))}</p>`:'');
+ } else {
+  opts=(q.options||[]).map((o,k)=>{
+   let c='';const sel=(quiz.sel||[]).includes(k);
+   if(shown){c=ansList.includes(k)?'ok':sel?'no':'dim'}else if(sel)c='sel';
+   const oText=typeof o==='object'?(o.text||o.option||''):String(o);
+   const why=shown&&(ansList.includes(k)||sel)&&(q.why?.[k]||o.why)?`<p class="iv-why">${esc(q.why?.[k]||o.why)}</p>`:'';
+   return `<button class="iv-opt ${c} ${multi?'m':'r'}" data-k="${k}"><span>${k+1}</span><div>${esc(oText)}${why}</div></button>`;
+  }).join('');
+ }
+
+ const hintSection = (q.hint && !shown) ? `
+  <div style="margin:12px 0">
+   <button class="iv-btn-mini" id="hintBtn" style="color:var(--brass)">💡 Подсказка (H / Р)</button>
+   <div id="hintBox" style="display:none" class="iv-hint-box">
+    <span>${esc(q.hint)}</span>
+    <span class="iv-hint-timer" id="hintTime">5с</span>
+   </div>
+  </div>` : '';
+
+ b.innerHTML=`<div class="iv-col"><div class="iv-prog"><i style="width:${(i/qs.length)*100}%"></i></div><div class="iv-meta">Вопрос ${i+1} из ${qs.length}${multi?' · несколько ответов':''}</div>
+ <p class="iv-q">${marked.parseInline(esc(q.q))}</p>${q.code?`<pre><code class="language-${q.lang||j.lang||'python'}">${esc(q.code)}</code></pre>`:''}${opts}
+ ${hintSection}
+ <div class="iv-foot">
+  <span>${q.type==='input'?'↵ ответить':'1–'+(q.options?.length||4)+' выбор/отмена · ↵ принять'}</span>
+  <button class="iv-btn" id="go">${shown?'Дальше':'Ответить (↵)'}</button>
+ </div></div>`;
+ b.querySelectorAll('pre code').forEach(c=>hljs.highlightElement(c));
+
+ const triggerHint=()=>{
+  if(!q.hint||shown)return;
+  const hb=$('#hintBox'),ht=$('#hintTime');if(!hb)return;
+  clearHintTimer();
+  hintSeconds=5;ht.textContent='5с';hb.style.display='flex';
+  hintInterval=setInterval(()=>{
+   hintSeconds--;
+   if(ht)ht.textContent=hintSeconds+'с';
+   if(hintSeconds<=0){clearHintTimer();if(hb)hb.style.display='none';}
+  },1000);
+ };
+ if($('#hintBtn'))$('#hintBtn').onclick=triggerHint;
+
+ const check=()=>{
+  if(shown){quiz.i++;quiz.ans=null;quiz.sel=[];return drawQuiz()}
+  let ok=false,userLabel='',expectedLabel='',whyStr='';
+  if(q.type==='input'){
+   const v=($('#inp')?.value||'').trim();if(!v)return;
+   ok=ansList.some(a=>String(a).trim().toLowerCase()===v.toLowerCase());
+   quiz.ans=v;userLabel=v;expectedLabel=ansList.join(' / ');
+  } else {
+   const sortedSel=(quiz.sel||[]).slice().sort().map(Number);
+   const sortedAns=ansList.slice().sort().map(Number);
+   if(!sortedSel.length)return;
+   ok=sortedSel.join(',')===sortedAns.join(',');
+   quiz.ans=sortedSel;
+   const getLabels=idxList=>idxList.map(idx=>{const item=q.options?.[idx];return typeof item==='object'?(item.text||item.option):String(item)}).join('; ');
+   userLabel=getLabels(sortedSel);expectedLabel=getLabels(sortedAns);
+   whyStr=sortedSel.map(idx=>q.why?.[idx]||q.options?.[idx]?.why).filter(Boolean).join('; ');
+  }
+  quiz.results.push({i:i+1,q:q.q,type:q.type||'single',user:userLabel,expected:expectedLabel,correct:ok,why:whyStr});
+  quiz.last=ok;ok?quiz.ok++:quiz.weak.push(i+1);drawQuiz();
+ };
+
+ const toggleOption=k=>{
+  if(shown||!q.options||k>=q.options.length)return;
+  if(multi){
+   quiz.sel=(quiz.sel||[]).includes(k)?quiz.sel.filter(x=>x!==k):[...(quiz.sel||[]),k];
+  } else {
+   quiz.sel=(quiz.sel||[]).includes(k)?[]:[k];
+  }
+  b.querySelectorAll('.iv-opt').forEach(btn=>{
+   const btnK=+btn.dataset.k;
+   const isSel=(quiz.sel||[]).includes(btnK);
+   btn.classList.toggle('sel',isSel);
+   if(btnK===k){btn.classList.add('pulse');setTimeout(()=>btn.classList.remove('pulse'),200);}
+  });
+ };
+
+ b.querySelectorAll('.iv-opt').forEach(e=>e.onclick=()=>toggleOption(+e.dataset.k));
+ $('#go').onclick=check;
+ hotkeys=e=>{
+  if(e.target.tagName==='INPUT'&&e.key!=='Enter')return;
+  if(/^[1-9]$/.test(e.key)){e.preventDefault();toggleOption(+e.key-1);}
+  else if(e.key==='Enter'){e.preventDefault();check();}
+  else if(e.code==='KeyH'||e.key.toLowerCase()==='h'||e.key.toLowerCase()==='р'){e.preventDefault();triggerHint();}
+ };
+ if($('#inp')&&!shown)$('#inp').focus();
+}
+
+// Flashcards: Distinct Colored Bubbles and Clean Transfer Workflow
+function showCards(j,keep){
+ cardsData=j;const list=Array.isArray(j)?j:(j.cards||[]);
+ const title=j.deck?.split('::').pop()||j.title||'Карточки';
+ const b=$('#body');
+ if(!list.length){b.innerHTML=`<div class="iv-col"><div class="iv-empty">В файле нет карточек.</div></div>`;return}
+ if(stepIdx>=list.length)stepIdx=0;
+
+ const F=[
+  ['question','Вопрос','q','iv-bubble-q'],
+  ['front','Вопрос','q','iv-bubble-q'],
+  ['answer','Ответ','','iv-bubble-a'],
+  ['back','Ответ','','iv-bubble-a'],
+  ['pseudocode','Псевдокод','m','iv-bubble-p'],
+  ['code','Код','m','iv-bubble-c']
+ ];
+
+ const copyText=async(text,bubbleEl)=>{
+  await navigator.clipboard.writeText(text);
+  const badge=bubbleEl.querySelector('.iv-bubble-copy');const orig=badge.innerHTML;
+  bubbleEl.classList.add('cp');badge.textContent='Скопировано ✓';
+  setTimeout(()=>{bubbleEl.classList.remove('cp');badge.innerHTML=orig;},1200);
+ };
+
+ const renderBubble=(c,k,label,cls,bubbleCls,i)=>{
+  const val=c[k];if(!val)return '';
+  return `<div class="iv-bubble ${bubbleCls}" data-k="${k}" data-i="${i}">
+   <div class="iv-bubble-head">
+    <span class="iv-bubble-label">${label}</span>
+    <span class="iv-bubble-copy">Скопировать<kbd style="margin-left:4px">${i}</kbd></span>
+   </div>
+   <div class="iv-bubble-val ${cls}">${esc(val)}</div>
+  </div>`;
+ };
+
+ if(cardView==='step'){
+  const c=list[stepIdx];
+  const qKey=c.question?'question':c.front?'front':'';
+  const qVal=c[qKey]||'';
+  let fieldsHtml='';
+  if(stepUnfolded){
+   let idxCounter=1;
+   const visibleFields=F.filter(([k])=>c[k]&&!((k==='front'&&c.question)||(k==='back'&&c.answer)));
+   fieldsHtml='<div style="margin-top:14px">'+visibleFields.map(([k,l,cl,bCls])=>renderBubble(c,k,l,cl,bCls,idxCounter++)).join('')+'</div>';
+  } else {
+   fieldsHtml=`
+    <div class="iv-bubble iv-bubble-q" data-k="${qKey}" data-i="1">
+     <div class="iv-bubble-head"><span class="iv-bubble-label">Вопрос</span><span class="iv-bubble-copy">Скопировать<kbd style="margin-left:4px">1</kbd></span></div>
+     <div class="iv-bubble-val q">${esc(qVal)}</div>
+     ${c.code?`<pre style="margin-top:12px"><code class="language-${c.lang||j.lang||'python'}">${esc(c.code)}</code></pre>`:''}
+    </div>
+    <div class="iv-step-prompt" id="stPrompt">Нажми <b>Пробел</b> или кликни здесь, чтобы развернуть ответ и поля для Anki</div>`;
+  }
+
+  b.innerHTML=`<div class="iv-col">
+   <div class="iv-tabs">
+    <button class="iv-tab" id="tabList">Все карточки</button>
+    <button class="iv-tab on" id="tabStep">Пошаговый перенос</button>
+   </div>
+   <div class="iv-head"><div class="iv-meta">${esc(title)} · ${c.n?`№${c.n} · `:''}Карточка ${stepIdx+1} из ${list.length}</div></div>
+   <div class="iv-card-container">${fieldsHtml}</div>
+   <div class="iv-step-nav">
+    <button class="iv-btn" id="stPrev" style="background:var(--surface-3);color:var(--ink)" ${stepIdx===0?'disabled style="opacity:.4"':''}>‹ Назад (←)</button>
+    <button class="iv-btn" id="stToggle" style="background:var(--surface-3);color:var(--ink)">${stepUnfolded?'Свернуть (Пробел)':'Развернуть (Пробел)'}</button>
+    <button class="iv-btn" id="stNext">${stepIdx===list.length-1?'В начало ↺':'Далее (→)'}</button>
+   </div>
+  </div>`;
+  b.querySelectorAll('pre code').forEach(c=>hljs.highlightElement(c));
+
+  const toggle=()=>{stepUnfolded=!stepUnfolded;showCards(j,true)};
+  $('#stToggle').onclick=toggle;
+  if($('#stPrompt'))$('#stPrompt').onclick=toggle;
+  $('#stPrev').onclick=()=>{if(stepIdx>0){stepIdx--;stepUnfolded=false;showCards(j,true)}};
+  $('#stNext').onclick=()=>{stepIdx=(stepIdx+1)%list.length;stepUnfolded=false;showCards(j,true)};
+  $('#tabList').onclick=()=>{cardView='list';showCards(j,true)};
+  b.querySelectorAll('.iv-bubble').forEach(btn=>{
+   btn.onclick=()=>copyText(c[btn.dataset.k], btn);
+  });
+  hotkeys=e=>{
+   if(e.key===' '){e.preventDefault();toggle()}
+   else if(e.key==='ArrowLeft'&&stepIdx>0){stepIdx--;stepUnfolded=false;showCards(j,true)}
+   else if(e.key==='ArrowRight'){stepIdx=(stepIdx+1)%list.length;stepUnfolded=false;showCards(j,true)}
+   else if(stepUnfolded&&/^[1-4]$/.test(e.key)){
+    const btn=b.querySelector(`.iv-bubble[data-i="${e.key}"]`);
+    if(btn)copyText(c[btn.dataset.k], btn);
+   }
+  };
+  return;
+ }
+
+ // List mode
+ let cur=0;
+ b.innerHTML=`<div class="iv-col">
+  <div class="iv-tabs">
+   <button class="iv-tab on" id="tabList">Все карточки</button>
+   <button class="iv-tab" id="tabStep">Пошаговый перенос</button>
+  </div>
+  <h1>${esc(title)}</h1>
+  <p class="iv-hint">Клик по блоку копирует его поле в буфер для Anki. Клавиши 1–4 копируют поля карточки под курсором.</p>`+
+  list.map((c,n)=>{
+   let counter=1;
+   const visible=F.filter(([k])=>c[k]&&!((k==='front'&&c.question)||(k==='back'&&c.answer)));
+   return `<div class="iv-card-container" data-n="${n}">
+    <div class="iv-card-head">${c.n?`№${c.n} · `:''}Карточка ${n+1} из ${list.length}</div>`+
+    visible.map(([k,l,cl,bCls])=>renderBubble(c,k,l,cl,bCls,counter++)).join('')+'</div>';
+  }).join('')+'</div>';
+
+ document.querySelectorAll('.iv-card-container').forEach(c=>{
+  c.onmouseenter=()=>cur=+c.dataset.n;
+  c.querySelectorAll('.iv-bubble').forEach(b=>b.onclick=()=>copyText(list[+c.dataset.n][b.dataset.k], b));
+ });
+ $('#tabStep').onclick=()=>{cardView='step';stepUnfolded=false;showCards(j,true)};
+ hotkeys=e=>{
+  if(/^[1-4]$/.test(e.key)){
+   const bEl=document.querySelectorAll(`.iv-card-container[data-n="${cur}"] .iv-bubble[data-i="${e.key}"]`)[0];
+   if(bEl)copyText(list[cur][bEl.dataset.k], bEl);
+  }
+ };
+}
+
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'){closeMermaidModal();return}
+ const m=e.metaKey||e.ctrlKey;
+ if(m&&e.key==='['){e.preventDefault();cmd('back')}
+ else if(m&&e.key===']'){e.preventDefault();cmd('forward')}
+ else if(m&&e.shiftKey&&e.key.toLowerCase()==='l'){e.preventDefault();$('#theme').click()}
+ else if(!m&&hotkeys)hotkeys(e);
+});
+
+function playChime(){
+ try{
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type='sine';
+  osc.frequency.setValueAtTime(587.33,ctx.currentTime);
+  osc.frequency.setValueAtTime(880,ctx.currentTime+0.12);
+  gain.gain.setValueAtTime(0.18,ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.45);
+  osc.connect(gain);gain.connect(ctx.destination);
+  osc.start();osc.stop(ctx.currentTime+0.45);
+ }catch{}
+}
+let activeServerId=null;
+const es=new EventSource('/events');
+es.addEventListener('hello',e=>{
+ const d=JSON.parse(e.data);
+ if(activeServerId&&activeServerId!==d.serverId){location.reload();return;}
+ activeServerId=d.serverId;
+ if(d.name)updateWsUI(d.root,d.name);
+});
+es.addEventListener('workspace',e=>{
+ const d=JSON.parse(e.data);
+ updateWsUI(d.root,d.name);
+});
+function applyState(n){
+ if(n.path===S.path&&n.mode===S.mode&&n.pos===S.pos&&n.history?.length===S.history?.length)return;
+ const same=n.path===S.path&&n.mode===S.mode;
+ if(n.workspaceName&&n.workspace!==currentWsRoot)updateWsUI(n.workspace,n.workspaceName);
+ S=n;
+ render(same);
+}
+es.addEventListener('state',e=>{
+ const n=JSON.parse(e.data);
+ const same=n.path===S.path&&n.mode===S.mode;
+ if(n.workspaceName)updateWsUI(n.workspace,n.workspaceName);
+ S=n;
+ render(same);
+});
+es.addEventListener('change',e=>{
+ const p=JSON.parse(e.data).path;
+ if(p&&p===S.path)render(true);
+ else loadTree();
+});
+es.addEventListener('notify',()=>playChime());
+
+loadWorkspace();
+loadTree();
+</script></body></html>

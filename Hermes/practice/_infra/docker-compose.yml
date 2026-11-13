@@ -1,0 +1,18 @@
+# PostgreSQL для практики Hermes.
+# Запуск: docker compose -f practice/_infra/docker-compose.yml up -d
+# Подключение: postgresql://hermes:hermes@127.0.0.1:5433/practice (127.0.0.1, не localhost: на Windows localhost тормозит на 3 с)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hermes-practice-pg
+    environment:
+      POSTGRES_USER: hermes
+      POSTGRES_PASSWORD: hermes
+      POSTGRES_DB: practice
+    ports:
+      - "5433:5432"
+    volumes:
+      - hermes-practice-pg:/var/lib/postgresql/data
+
+volumes:
+  hermes-practice-pg:
